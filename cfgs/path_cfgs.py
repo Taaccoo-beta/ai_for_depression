@@ -9,7 +9,7 @@ class PATH:
     def __init__(self):
 
         
-        self.DATASET_PATH = ''
+        self.DATASET_PATH = '/mnt/'
 
         self.FEATURE_PATH = ''
 
