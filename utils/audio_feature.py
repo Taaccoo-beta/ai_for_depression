@@ -14,6 +14,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 print(librosa.__version__) #0.6.0
 print(np.__version__) #1.13.1
-print(matplotlib.__version__)#3.1.0
+print(matplotlib.__version__)#3.1.0..
 
 
