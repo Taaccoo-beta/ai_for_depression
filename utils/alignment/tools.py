@@ -90,8 +90,11 @@ class ProductAlignment:
                 f["voice_id_start"] = list_voice_id[:,0]
                 f["voice_id_end"] = list_voice_id[:,1]
                 print(save_csv_filename)
+                f = f.dropna(how="any")
                 f.to_csv(save_csv_filename,index=0)
     
+
+
 
 if __name__ == "__main__":
     pass 
