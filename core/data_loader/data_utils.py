@@ -4,8 +4,9 @@
 # Written by 
 # --------------------------------------------------------
 
+
 import sys
-sys.path.append('../')
+sys.path.append("..")
 import en_vectors_web_lg, random, re, json
 import numpy as np 
 
@@ -76,5 +77,5 @@ def proc_face_voice_feature(feature, padding_size):
 
 
 
-if __name__ == "__main__":
-    pass 
+# if __name__ == "__main__":
+#     pass 

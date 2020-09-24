@@ -29,32 +29,30 @@ class CIM_Attention(nn.Module):
 
 class EarlyFusionNet(nn.Module):
 
-    def __init__(self,USE_GLOVE):
+    def __init__(self,USE_GLOVE,pretrained_emb, token_size):
         super(EarlyFusionNet, self).__init__()
 
         self.embedding = nn.Embedding(
-            num_embeddings=400,
+            num_embeddings=token_size,
             embedding_dim=300
         )
         # Loading the GloVe embedding weights
         if USE_GLOVE:
             self.embedding.weight.data.copy_(torch.from_numpy(pretrained_emb))
-        self.face_gru = nn.GRU(204,150,num_layers=2,bidirectional=True)  #b,n,300
-        self.voice_gru = nn.GRU(80,150,num_layers=2,bidirectional=True)  #b,n,300
-        self.text_gru = nn.GRU(300,150,num_layers=2,bidirectional=True)  #b,n,300 
+        self.face_gru = nn.LSTM(204,150,num_layers=1,bidirectional=True)  #b,n,300
+        self.voice_gru = nn.LSTM(80,150,num_layers=1,bidirectional=True)  #b,n,300
+        self.text_gru = nn.LSTM(300,150,num_layers=1,bidirectional=True)  #b,n,300 
 
         self.CIMA = CIM_Attention()
 
         self.linear_layer = nn.Sequential(
-            nn.Linear(300,225),
+            nn.Linear(300,100),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(225,100),
+            nn.Linear(100,20),
             nn.ReLU(),
             nn.Dropout(0.4),
-            nn.Linear(100,20),
-            nn.Dropout(0.4),
-            nn.Linear(20,2)
+            nn.Linear(20,1)
         )
 
     def forward(self,face_feat,voice_feat,text_feat):
@@ -82,8 +80,10 @@ class EarlyFusionNet(nn.Module):
 
 if __name__ == "__main__":
     net = EarlyFusionNet(0)
-    face_feat = torch.randn(10,200,204)
-    voice_feat=torch.randn(10,200,80)
-    text_feat=torch.ones((10,15),dtype=torch.long)
+    face_feat = torch.randn(64,200,204)
+    voice_feat=torch.randn(64,200,80)
+    text_feat=torch.ones((64,15),dtype=torch.long)
 
-    print(net(face_feat,voice_feat,text_feat))
+    out = net(face_feat,voice_feat,text_feat)
+    print(out.shape)
+    
