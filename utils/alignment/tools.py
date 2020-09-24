@@ -14,7 +14,7 @@ def get_duraion():
         except:
             pass 
     duration_dict = {item[0]:item[1] for item in data_list}
-    duration_save = "/mnt/sdc1/daicwoz/audio_duration_dict_ms.npy"
+    duration_save = "/mnt/sdc1/daicwoz/data_pro/audio_duration_dict_ms.npy"
     np.save(duration_save,duration_dict)
 
 
@@ -24,13 +24,15 @@ class ProductAlignment:
         self.path_face3d_format = None
         self.path_voice_feature_format = None
         self.save_csv_filename = None
-        self.path_duration = os.path.join(root_path,"audio_duration_dict_ms.npy")
+
+        self.root_path = root_path
+        self.path_duration = os.path.join(self.root_path,"data_pro/audio_duration_dict_ms.npy")
 
     def generate_path(self,item):
-        self.path_Transcript_format = os.path.join(root_path,"{}_P/{}_TRANSCRIPT.csv".format(item,item))
-        self.path_face3d_format = os.path.join(root_path,"{}_CLNF_features3D.txt".format(item,item))
-        self.path_voice_feature_format = os.path.join(root_path,"{}_P/{}_encoded_AUDIO.pt".format(item,item))
-        self.save_csv_filename = os.path.join(root_path,"alignment/{}_alignment_feature.csv".format(item,item))
+        self.path_Transcript_format = os.path.join(self.root_path,"{}_P/{}_TRANSCRIPT.csv".format(item,item))
+        self.path_face3d_format = os.path.join(self.root_path,"{}_CLNF_features3D.txt".format(item,item))
+        self.path_voice_feature_format = os.path.join(self.root_path,"{}_P/{}_encoded_AUDIO.pt".format(item,item))
+        self.save_csv_filename = os.path.join(self.root_path,"alignment/{}_alignment_feature.csv".format(item,item))
 
     def load_duration(self,file_name):
         f = np.load(file_name,allow_pickle=True).tolist()
@@ -46,16 +48,17 @@ class ProductAlignment:
             return feature_list.__len__()-1
 
     def calc_feature_location(self,start_t,stop_t,total_time,feature_num):
-    """
-        returns: id_start,id_end 
-    """
+        """
+            returns: id_start,id_end 
+        """
         start_id = start_t/total_time*feature_num 
         stop_id = stop_t/total_time*feature_num 
 
         return start_id,stop_id
 
     def generate_csv(self):
-        total_time = load_duration(path_duration)
+        total_time = self.load_duration(self.path_duration)
+        count = 0 
         for item in range(300,493):
             self.generate_path(item)
             
@@ -67,6 +70,7 @@ class ProductAlignment:
                 face_feature_len = self.get_feature_3d_len(self.path_face3d_format)
                 
                 voice_feature_len = self.get_voice_feature_len(self.path_voice_feature_format)
+                count+=1
             except:
                 continue 
 
@@ -92,9 +96,11 @@ class ProductAlignment:
                 print(save_csv_filename)
                 f = f.dropna(how="any")
                 f.to_csv(save_csv_filename,index=0)
+                
     
 
 
 
 if __name__ == "__main__":
-    pass 
+    P = ProductAlignment()
+    P.generate_csv() 
