@@ -66,9 +66,9 @@ def run():
     #     print(epoch, loss.item())
     #     pred = sm(logits)
     #     #print("pred: ", pred, "label: ", label)
+        net.eval()
         with torch.no_grad():
-            net.eval()
-
+            
             total_correct = 0
             total_num = 0
             total_positive = 0
@@ -81,7 +81,7 @@ def run():
                                                           text_test.to(device),ans_test.to(device)
                 result = net(face_test,voice_test,text_test)  
             
-
+                
                 result = torch.gt(torch.sigmoid(result),0.5).int()                
                 
                 result_list.extend(result.cpu().squeeze(1).numpy().tolist())

@@ -45,8 +45,10 @@ class EarlyFusionNet(nn.Module):
 
         self.CIMA = CIM_Attention()
 
+        self.transform = nn.Conv1d(300,1,kernel_size=5,stride=3)
+        self.layerNorm = nn.LayerNorm((414),eps=0.0001,elementwise_affine=True)
         self.linear_layer = nn.Sequential(
-            nn.Linear(300,100),
+            nn.Linear(414,100),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(100,20),
@@ -71,16 +73,15 @@ class EarlyFusionNet(nn.Module):
         AttVA = self.CIMA(V,A) #(b,400,400)
 
         AttPren = torch.cat((AttTA,AttTV,AttVA,T,V,A),dim=1) #(b,200+200+15+215+215+400,300)
-
-        out = torch.mean(AttVA,1)  # change --> 1dim 
-        
+        out = self.transform(AttPren.permute(0,2,1))   #(b, 1,414)
+        out = self.layerNorm(out.squeeze(1))
         out = self.linear_layer(out) #(b,2)
 
         return out  
 
 
 if __name__ == "__main__":
-    net = EarlyFusionNet(0)
+    et = EarlyFusionNet(0)
     face_feat = torch.randn(64,200,204)
     voice_feat=torch.randn(64,200,80)
     text_feat=torch.ones((64,15),dtype=torch.long)
