@@ -15,9 +15,13 @@ def normalize_features(data_list):
 
 
 
-def produce_splited_feature(pad_size):
-    labels = np.load("/mnt/sdc1/daicwoz/data_pro/test_title2label.npy",allow_pickle=True).tolist()
-    print("Length of labels.keys():",labels.keys().__len__())
+def produce_splited_feature(pad_size,isTrain):
+    if isTrain:
+        labels = np.load("/mnt/sdc1/daicwoz/data_pro/train_title2label.npy",allow_pickle=True).tolist()
+    else: 
+        labels = np.load("/mnt/sdc1/daicwoz/data_pro/test_title2label.npy",allow_pickle=True).tolist()
+
+    print("Length of lgit abels.keys():",labels.keys().__len__())
     data_list = []
     for item in labels.keys():
         path_Transcript_format = "/mnt/sdc1/daicwoz/data_pro/alignment/{}_alignment_feature.csv".format(item,item)
@@ -27,7 +31,8 @@ def produce_splited_feature(pad_size):
         
         try:
             f = pd.read_csv(path_Transcript_format,sep=",")
-
+            # start_time	stop_time	speaker	value	face_id_start	face_id_end	voice_id_start	voice_id_end
+           
             face_feature = open(path_face3d_format,'r').readlines()[1:]
             face_feature = [list(map(float,face_feature[i].split(",")))[4:] for i in range(face_feature.__len__())]
             face_feature = normalize_features(face_feature)
@@ -57,13 +62,17 @@ def produce_splited_feature(pad_size):
         print(item)
         
     data_a = np.array(data_list)
-    np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4_test.npy",data_a[:,0:4])
-    np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_face_test.npy",data_a[:,4])
-    np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_voice_test.npy",data_a[:,5])
 
-    # np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4.npy",data_a[:,0:4])
-    # np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_face.npy",data_a[:,4])
-    # np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_voice.npy",data_a[:,5])
+    if isTrain:
+        np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4.npy",data_a[:,0:4])
+        np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_face.npy",data_a[:,4])
+        np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_voice.npy",data_a[:,5])
+    else: 
+        np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4_test.npy",data_a[:,0:4])
+        np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_face_test.npy",data_a[:,4])
+        np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_voice_test.npy",data_a[:,5])
+
+    
     
 if __name__ == "__main__":
     produce_splited_feature(200)

@@ -4,6 +4,7 @@ import pandas as pd
 import torch
 
 def get_duraion():
+
     data_list = []
     for item in range(300,493):
         path = '/mnt/sdc1/daicwoz/'+str(num)+'_P/'+str(num)+'_AUDIO.wav'
@@ -19,6 +20,11 @@ def get_duraion():
 
 
 class ProductAlignment:
+    """
+    Produce alignment feature 
+
+    """
+
     def __init__(self,root_path="/mnt/sdc1/daicwoz"):
         self.path_Transcript_format = None
         self.path_face3d_format = None
@@ -30,16 +36,16 @@ class ProductAlignment:
 
     def generate_path(self,item):
         self.path_Transcript_format = os.path.join(self.root_path,"{}_P/{}_TRANSCRIPT.csv".format(item,item))
-        self.path_face3d_format = os.path.join(self.root_path,"{}_CLNF_features3D.txt".format(item,item))
+        self.path_face3d_format = os.path.join(self.root_path,"{}_P/{}_CLNF_features3D.txt".format(item,item))
         self.path_voice_feature_format = os.path.join(self.root_path,"{}_P/{}_encoded_AUDIO.pt".format(item,item))
-        self.save_csv_filename = os.path.join(self.root_path,"alignment/{}_alignment_feature.csv".format(item,item))
+        self.save_csv_filename = os.path.join(self.root_path,"data_pro/alignment/{}_alignment_feature.csv".format(item,item))
 
     def load_duration(self,file_name):
         f = np.load(file_name,allow_pickle=True).tolist()
         return f 
 
     def get_voice_feature_len(self,file_name):
-        f = torch.load(path_voice_feature)
+        f = torch.load(file_name)
         return f.shape[0]
 
     def get_feature_3d_len(self,file_name):
@@ -54,14 +60,17 @@ class ProductAlignment:
         start_id = start_t/total_time*feature_num 
         stop_id = stop_t/total_time*feature_num 
 
-        return start_id,stop_id
+        return int(np.round(start_id)),int(np.round(stop_id))
 
     def generate_csv(self):
+        """
+            return:
+                (start_time	stop_time	speaker	value	face_id_start	face_id_end	voice_id_start	voice_id_end)
+        """
         total_time = self.load_duration(self.path_duration)
         count = 0 
         for item in range(300,493):
             self.generate_path(item)
-            
             try:
                 f = pd.read_csv(self.path_Transcript_format,sep="\t")
                 item_total_time = total_time[item]
@@ -72,30 +81,33 @@ class ProductAlignment:
                 voice_feature_len = self.get_voice_feature_len(self.path_voice_feature_format)
                 count+=1
             except:
+                print("except:",item)
                 continue 
 
             list_face_id=[]
             list_voice_id=[]
             for item in range(f.shape[0]):
+                print(item)
                 start_t = int(f["start_time"].loc[item]*1000)
                 stop_t = int(f["stop_time"].loc[item]*1000)
             
-                id_start_face,id_end_face = self.calc_feature_location(start_t,stop_t,item_total_time,face_feather_len)
+                id_start_face,id_end_face = self.calc_feature_location(start_t,stop_t,item_total_time,face_feature_len)
                 list_face_id.append([id_start_face,id_end_face])
             
                 id_start_voice,id_end_voice = self.calc_feature_location(start_t,stop_t,item_total_time,voice_feature_len)
                 list_voice_id.append([id_start_voice,id_end_voice])
-                list_face_id = np.array(list_voice_id)
-                list_voice_id = np.array(list_voice_id)
+                
+            list_face_id = np.array(list_face_id)
+            list_voice_id = np.array(list_voice_id)
 
-                f["face_id_start"] = list_face_id[:,0]
-                f["face_id_end"] = list_face_id[:,1]
+            f["face_id_start"] = list_face_id[:,0]
+            f["face_id_end"] = list_face_id[:,1]
 
-                f["voice_id_start"] = list_voice_id[:,0]
-                f["voice_id_end"] = list_voice_id[:,1]
-                print(save_csv_filename)
-                f = f.dropna(how="any")
-                f.to_csv(save_csv_filename,index=0)
+            f["voice_id_start"] = list_voice_id[:,0]
+            f["voice_id_end"] = list_voice_id[:,1]
+            print(self.save_csv_filename)
+            f = f.dropna(how="any")
+            f.to_csv(self.save_csv_filename,index=0)
                 
     
 

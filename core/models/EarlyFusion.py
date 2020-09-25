@@ -72,7 +72,8 @@ class EarlyFusionNet(nn.Module):
 
         AttPren = torch.cat((AttTA,AttTV,AttVA,T,V,A),dim=1) #(b,200+200+15+215+215+400,300)
 
-        out = torch.mean(AttVA,1)
+        out = torch.mean(AttVA,1)  # change --> 1dim 
+        
         out = self.linear_layer(out) #(b,2)
 
         return out  
