@@ -19,18 +19,24 @@ class SplitedDataset(Data.Dataset):
 
     def __init__(self,train_or_test):
         self.train_or_test = train_or_test 
+        data_train_index = np.load("/mnt/sdc1/daicwoz/data_pro/participant_index_train.npy").tolist()
+        data_test_index = np.load("/mnt/sdc1/daicwoz/data_pro/participant_index_test.npy").tolist()
 
+    
         if self.train_or_test:
-            self.face_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_face.npy",allow_pickle=True)
-            self.voice_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_voice.npy",allow_pickle=True) 
+            self.face_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_face.npy",allow_pickle=True)[data_train_index]
+            
+            self.voice_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_voice.npy",allow_pickle=True)[data_train_index] 
             
         else:
-            self.face_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_face_test.npy",allow_pickle=True)
-            self.voice_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_voice_test.npy",allow_pickle=True)
+            self.face_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_face_test.npy",allow_pickle=True)[data_test_index]
+            self.voice_feat_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_voice_test.npy",allow_pickle=True)[data_test_index]
             
         
-        self.text_feat_train_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4.npy",allow_pickle=True)
-        self.text_feat_test_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4_test.npy",allow_pickle=True)
+
+        
+        self.text_feat_train_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4.npy",allow_pickle=True)[data_train_index]
+        self.text_feat_test_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4_test.npy",allow_pickle=True)[data_test_index]
         
         self.attri_feat_list = self.text_feat_train_list.tolist()+self.text_feat_test_list.tolist()
         self.attri_feat_list = np.array(self.attri_feat_list)
@@ -54,7 +60,7 @@ class SplitedDataset(Data.Dataset):
         voice_feat_iter = np.zeros(1)
         text_feat_iter = np.zeros(1)
 
-        text_iter = proc_ques(self.data_text[idx],self.token_to_ix,15)
+        text_iter = proc_ques(self.data_text[idx],self.token_to_ix,20)
         
 
         face_feat_iter = self.face_feat_list[idx]

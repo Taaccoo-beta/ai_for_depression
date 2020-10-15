@@ -36,9 +36,11 @@ class EarlyFusionNet(nn.Module):
             num_embeddings=token_size,
             embedding_dim=300
         )
+
         # Loading the GloVe embedding weights
         if USE_GLOVE:
             self.embedding.weight.data.copy_(torch.from_numpy(pretrained_emb))
+
         self.face_gru = nn.LSTM(204,150,num_layers=1,bidirectional=True)  #b,n,300
         self.voice_gru = nn.LSTM(80,150,num_layers=1,bidirectional=True)  #b,n,300
         self.text_gru = nn.LSTM(300,150,num_layers=1,bidirectional=True)  #b,n,300 
@@ -46,9 +48,9 @@ class EarlyFusionNet(nn.Module):
         self.CIMA = CIM_Attention()
 
         self.transform = nn.Conv1d(300,1,kernel_size=5,stride=3)
-        self.layerNorm = nn.LayerNorm((414),eps=0.0001,elementwise_affine=True)
+        self.layerNorm = nn.LayerNorm((219),eps=0.0001,elementwise_affine=False)
         self.linear_layer = nn.Sequential(
-            nn.Linear(414,100),
+            nn.Linear(219,100),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(100,20),
@@ -61,19 +63,19 @@ class EarlyFusionNet(nn.Module):
         """
             face_feat: (b,200,204)
             voice_feat: (b,200,80)
-            text_feat: (b,15)
+            text_feat: (b,20)
 
         """
-        T,_ = self.text_gru(self.embedding(text_feat))  #(b,15,300)
-        V,_ = self.face_gru(face_feat)   #(b,200,300)
-        A,_ = self.voice_gru(voice_feat) #(b,200,300)
+        T,_ = self.text_gru(self.embedding(text_feat))  #(b,20,300)
+        V,_ = self.face_gru(face_feat)   #(b,100,300)
+        A,_ = self.voice_gru(voice_feat) #(b,100,300)
 
-        AttTV = self.CIMA(T,V) #(b,215,300)
-        AttTA = self.CIMA(T,A) #(b,215,300)
-        AttVA = self.CIMA(V,A) #(b,400,400)
+        AttTV = self.CIMA(T,V) #(b,120,300)
+        AttTA = self.CIMA(T,A) #(b,120,300)
+        AttVA = self.CIMA(V,A) #(b,200,300)
 
-        AttPren = torch.cat((AttTA,AttTV,AttVA,T,V,A),dim=1) #(b,200+200+15+215+215+400,300)
-        out = self.transform(AttPren.permute(0,2,1))   #(b, 1,414)
+        AttPren = torch.cat((AttTA,AttTV,AttVA,T,V,A),dim=1) #(b,100+100+20+120+120+200,300)
+        out = self.transform(AttPren.permute(0,2,1))   #(b, 1,219)
         out = self.layerNorm(out.squeeze(1))
         out = self.linear_layer(out) #(b,2)
 

@@ -72,7 +72,21 @@ def produce_splited_feature(pad_size,isTrain):
         np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_face_test.npy",data_a[:,4])
         np.save("/mnt/sdc1/daicwoz/data_pro/split_feature_voice_test.npy",data_a[:,5])
 
-    
-    
+
+def get_participant_index():
+    text_feat_train_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4.npy",allow_pickle=True)
+    text_feat_test_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4_test.npy",allow_pickle=True)
+    data_train = pd.DataFrame(text_feat_train_list.tolist())
+    data_test = pd.DataFrame(text_feat_test_list.tolist())
+
+    data_train_index = data_train[data_train[2]=="Participant"].index.tolist()
+    data_test_index = data_test[data_test[2]=="Participant"].index.tolist()
+
+    np.save("/mnt/sdc1/daicwoz/data_pro/participant_index_train.npy",data_train_index)
+    np.save("/mnt/sdc1/daicwoz/data_pro/participant_index_test.npy",data_test_index)
+
+    print("done")
+
 if __name__ == "__main__":
-    produce_splited_feature(200)
+    produce_splited_feature(100,False)
+    #get_participant_index()
