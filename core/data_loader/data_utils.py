@@ -14,6 +14,7 @@ def tokenize(stat_ques_list, use_glove):
     token_to_ix = {
         'PAD': 0,
         'UNK': 1,
+        'SS' : 2,
     }
 
     spacy_tool = None
@@ -22,6 +23,7 @@ def tokenize(stat_ques_list, use_glove):
         spacy_tool = en_vectors_web_lg.load()
         pretrained_emb.append(spacy_tool('PAD').vector)
         pretrained_emb.append(spacy_tool('UNK').vector)
+        pretrained_emb.append(spacy_tool("SS").vector)
 
     for ques in stat_ques_list:
         words = re.sub(
@@ -41,22 +43,40 @@ def tokenize(stat_ques_list, use_glove):
     return token_to_ix, pretrained_emb
 
 
-def proc_ques(ques, token_to_ix, max_token):
-    ques_ix = np.zeros(max_token, np.int64)
+def proc_ques(ques, token_to_ix, max_token_question,max_token_answer):
+    ques_ix = np.zeros(max_token_question+max_token_answer+1, np.int64)
 
-    words = re.sub(
+    word_q = re.sub(
         r"([.,'!?\"()*#:;])",
         '',
-        ques.lower()
+        ques[0].lower()
     ).replace('-', ' ').replace('/', ' ').split()
 
-    for ix, word in enumerate(words):
+    word_a = re.sub(
+        r"([.,'!?\"()*#:;])",
+        '',
+        ques[1].lower()
+    ).replace('-', ' ').replace('/', ' ').split()
+
+    word_q.append("SS")
+    
+
+    for ix, word in enumerate(word_q):
         if word in token_to_ix:
             ques_ix[ix] = token_to_ix[word]
         else:
             ques_ix[ix] = token_to_ix['UNK']
 
-        if ix + 1 == max_token:
+        if ix + 1 == max_token_question+1:
+            break
+
+    for ix, word in enumerate(word_a):
+        if word in token_to_ix:
+            ques_ix[max_token_question+1+ix] = token_to_ix[word]
+        else:
+            ques_ix[max_token_question+1+ix] = token_to_ix['UNK']
+
+        if max_token_question+2+ix == max_token_question+max_token_answer+1:
             break
 
     return ques_ix

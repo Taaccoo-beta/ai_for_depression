@@ -24,15 +24,16 @@ def produce_splited_feature(pad_size,isTrain):
     print("Length of lgit abels.keys():",labels.keys().__len__())
     data_list = []
     for item in labels.keys():
-        path_Transcript_format = "/mnt/sdc1/daicwoz/data_pro/alignment/{}_alignment_feature.csv".format(item,item)
-        path_face3d_format = "/mnt/sdc1/daicwoz/{}_P/{}_CLNF_features3D.txt".format(item,item)
-        path_voice_feature_format="/mnt/sdc1/daicwoz/{}_P/{}_encoded_AUDIO.pt".format(item,item)
+        if item in [367,396,451,458,480]:
+            continue
+        else:
+            path_Transcript_format = "/mnt/sdc1/daicwoz/data_pro/alignment/{}_alignment_concat_feature.csv".format(item,item)
+            path_face3d_format = "/mnt/sdc1/daicwoz/{}_P/{}_CLNF_features3D.txt".format(item,item)
+            path_voice_feature_format="/mnt/sdc1/daicwoz/{}_P/{}_encoded_AUDIO.pt".format(item,item)
 
-        
         try:
-            f = pd.read_csv(path_Transcript_format,sep=",")
-            # start_time	stop_time	speaker	value	face_id_start	face_id_end	voice_id_start	voice_id_end
-           
+            f = pd.read_csv(path_Transcript_format)
+            # face_id_end	face_id_start	question	speaker	start_time	stop_time	value	voice_id_end	voice_id_start
             face_feature = open(path_face3d_format,'r').readlines()[1:]
             face_feature = [list(map(float,face_feature[i].split(",")))[4:] for i in range(face_feature.__len__())]
             face_feature = normalize_features(face_feature)
@@ -47,15 +48,16 @@ def produce_splited_feature(pad_size,isTrain):
         
         
         for i in range(f.__len__()):
-            segment_speak = f.iloc[i][2]
-            segment_sentence = f.iloc[i][3]
-            segment_face = face_feature[f.iloc[i][4]:f.iloc[i][5]]
-            segment_voice = voice_feature[f.iloc[i][6]:f.iloc[i][7]]
+            segment_question = f.iloc[i][2]
+            segment_answer = f.iloc[i][6]
+            
+            segment_face = face_feature[int(f.iloc[i][1]):int(f.iloc[i][0])]
+            segment_voice = voice_feature[int(f.iloc[i][8]):int(f.iloc[i][7])]
 
             segment_face = proc_face_voice_feature(segment_face,pad_size)
             segment_voice = proc_face_voice_feature(segment_voice,pad_size)
 
-            data_list.append([item,item_label,segment_speak,segment_sentence,segment_face,segment_voice])
+            data_list.append([item,item_label,segment_question,segment_answer,segment_face,segment_voice])
             
            
         
@@ -74,6 +76,7 @@ def produce_splited_feature(pad_size,isTrain):
 
 
 def get_participant_index():
+    # get the index of Participant, in the old version 
     text_feat_train_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4.npy",allow_pickle=True)
     text_feat_test_list = np.load("/mnt/sdc1/daicwoz/data_pro/split_feature_0_4_test.npy",allow_pickle=True)
     data_train = pd.DataFrame(text_feat_train_list.tolist())
@@ -88,5 +91,5 @@ def get_participant_index():
     print("done")
 
 if __name__ == "__main__":
-    produce_splited_feature(100,False)
+    produce_splited_feature(300,True)
     #get_participant_index()

@@ -74,11 +74,11 @@ class ProductAlignment:
         for i in range(start_ellie+1,end_participant+1):
             value+=" "+file_dataframe.iloc[i,3]
         
-        face_id_start = file_dataframe.iloc[start_ellie+1,4]  # face_id_start for participant during speaking
-        face_id_end = file_dataframe.iloc[end_participant,5]
+        face_id_start = int(file_dataframe.iloc[start_ellie+1,4])  # face_id_start for participant during speaking
+        face_id_end = int(file_dataframe.iloc[end_participant,5])
 
-        voice_id_start = file_dataframe.iloc[start_ellie+1,6]
-        voice_id_end = file_dataframe.iloc[end_participant,7]
+        voice_id_start = int(file_dataframe.iloc[start_ellie+1,6])
+        voice_id_end = int(file_dataframe.iloc[end_participant,7])
 
         question = file_dataframe.iloc[start_ellie,3]  # question asked by Ellie
         
@@ -86,6 +86,9 @@ class ProductAlignment:
         return new_item
 
     def csv_filter(self,f_dataframe):
+        """
+            output format: face_id_end	face_id_start	question	speaker	start_time	stop_time	value	voice_id_end	voice_id_start
+        """
         index = 0 
         length = f_dataframe.__len__() 
         patient_part = f_dataframe["speaker"]
@@ -95,26 +98,48 @@ class ProductAlignment:
         end_participant = 0
         new_csv_dataframe = pd.DataFrame()
 
-        while index<length:
-            try:
-                if patient_part[index] == "Ellie" and patient_part[index+1]=="Participant":
-                    i = 0
-                    while patient_part[index+i+1] == "Participant":
-                        i = i + 1
-                    start_ellie = index
-                    end_participant = index+i
+        while index+1<length:
+            
+            if patient_part[index] == "Ellie" and patient_part[index+1]=="Participant":
+                i = 0
+                while patient_part[index+i+1] == "Participant":
+                    i = i + 1
+                    if index+i+1>=length:
+                        break
+                start_ellie = index
+                end_participant = index+i
 
-                    new_item = get_item_from_index(start_ellie,end_participant,f_dataframe)
-                    new_csv_dataframe.append(new_item)
-                    print(start_ellie,end_participant)
-                    index = index+i+1
-            except:
-                pass   # index out of length
+                new_item = self.get_item_from_index(start_ellie,end_participant,f_dataframe)
+        
+                new_csv_dataframe = new_csv_dataframe.append(new_item,ignore_index=True)
+            
+            
+                index = index+i+1
+                
+            
             else:
                 index = index+1
         return new_csv_dataframe
+    
+    def filter_bracket(self,f):
+        """
+            delete () in Ellie part
+        """
+        data_question = f["question"].tolist()
+        data_pro = []
+        ## filter () 
+        p2 = re.compile(r'[(](.*)[)]', re.S)
+        data_pro = []
+        for item in data_question:
+            s = re.findall(p2,item)
+            if s != []:
+                data_pro.append(s[0])
+            else:
+                data_pro.append(item)
+        f["question"] = data_pro
+        return f 
 
-    def generate_csv(self,if_concat):
+    def generate_csv(self):
         """
             return:
                 (start_time	stop_time	speaker	value	face_id_start	face_id_end	voice_id_start	voice_id_end)
@@ -123,6 +148,8 @@ class ProductAlignment:
         count = 0 
         for item in range(300,493):
             self.generate_path(item)
+            
+            # get raw csv file and the length of face and voice features
             try:
                 f = pd.read_csv(self.path_Transcript_format,sep="\t")
                 item_total_time = total_time[item]
@@ -156,34 +183,43 @@ class ProductAlignment:
 
             f["voice_id_start"] = list_voice_id[:,0]
             f["voice_id_end"] = list_voice_id[:,1]
-            print(self.save_csv_filename)
+           
             f = f.dropna(how="any")
 
-
-            if if_concat:
-                patient_part = f[f["speaker"]=="Participant"]
-                index_ellie = patient_part.index-1
-                data_question = f.iloc[index_ellie,3].tolist()
+            f.to_csv(self.save_csv_filename,index=0)
                 
-                ## filter () 
-                p2 = re.compile(r'[(](.*)[)]', re.S)
-                data_pro = []
-                for item in data_question:
-                    s = re.findall(p2,item)
-                    if s != []:
-                        data_pro.append(s[0])
-                    else:
-                        data_pro.append(item)
-                patient_part["question"] = data_pro
+    def transform_csv_to_concat_format(self):
+        wrong_format = []
 
-                patient_part.to_csv(self.save_csv_concat_filename,index=0)
-            else:
-                f.to_csv(self.save_csv_filename,index=0)
-                
-    
+        for item in range(300,493):
+            self.generate_path(item)
+            
+            # get raw csv file and the length of face and voice features
+            try:
+                f = pd.read_csv(self.save_csv_filename)
+            except:
+                print("except:",item)
+                continue 
+
+            f = self.csv_filter(f)
+            
+            
+            try:
+                f = self.filter_bracket(f)
+            except:
+                wrong_format.append(item)
+                print("error",item)
+
+            f.to_csv(self.save_csv_concat_filename,index=0)
+        
+        with open("worngFromat.txt","w") as f:
+            for i in wrong_format:
+                f.write(str(i)+"\n")
+
 
 
 
 if __name__ == "__main__":
     P = ProductAlignment()
-    P.generate_csv(True) 
+    #P.generate_csv()
+    P.transform_csv_to_concat_format() 
